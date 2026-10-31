@@ -1,0 +1,1354 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>UAS Inventory</title>
+    <style>
+        /* Styling */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #fff;
+            color: #222;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .wrap {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 12px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 16px 0 8px;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        h3 {
+            font-size: 16px;
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        button {
+            font: inherit;
+        }
+
+        code,
+        .mono {
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .muted {
+            color: #555;
+        }
+
+        .small {
+            font-size: 12px;
+        }
+
+        .lede {
+            color: #444;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            border: 1px solid #888;
+            background: #e8e8e8;
+            color: #222;
+            padding: 5px 12px;
+            cursor: pointer;
+            border-radius: 2px;
+        }
+
+        .btn:hover {
+            background: #d8d8d8;
+        }
+
+        .btn-primary {
+            background: #20305d;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #07133d;
+        }
+
+        .btn-warn {
+            background: #e0a020;
+            border-color: #b07a10;
+            color: #000;
+        }
+
+        .btn-warn:hover {
+            background: #c88e18;
+        }
+
+        .btn-sm {
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+
+        .btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .lbl {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        input[type=text],
+        input[type=search],
+        input[type=password],
+        select {
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #888;
+            width: 100%;
+        }
+
+        input[aria-invalid="true"] {
+            border-color: #c00;
+        }
+
+        .err {
+            color: #c00;
+            margin-top: 4px;
+        }
+
+        .err:empty {
+            display: none;
+        }
+
+        .check {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            cursor: pointer;
+        }
+
+        /* Header */
+        .top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 16px;
+            border-bottom: 2px solid #444;
+            padding: 10px 0;
+            margin-bottom: 6px;
+        }
+
+        .brand {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .tab {
+            border: 1px solid #888;
+            background: #f2f2f2;
+            padding: 4px 10px;
+            cursor: pointer;
+        }
+
+        .tab[aria-current="page"] {
+            background: #fff;
+            border-bottom-color: #fff;
+            font-weight: bold;
+        }
+
+        .who {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Inventory */
+        .stats {
+            margin: 4px 0 12px;
+            color: #444;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+            margin-bottom: 12px;
+        }
+
+        .fld {
+            min-width: 0;
+        }
+
+        .toolbar .fld {
+            flex: 0 1 200px;
+        }
+
+        .toolbar .grow {
+            flex: 1 1 240px;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 12px;
+            padding: 0 4px;
+            border: 1px solid #999;
+        }
+
+        .b-haz {
+            background: #ffe08a;
+            border-color: #b07a10;
+            font-weight: bold;
+        }
+
+        .b-std {
+            color: #555;
+        }
+
+        .b-crit {
+            background: #fbd0d0;
+            border-color: #c00;
+        }
+
+        .tablewrap {
+            overflow-x: auto;
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tbl th,
+        .tbl td {
+            border: 1px solid #bbb;
+            padding: 5px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .tbl th {
+            background: #eee;
+        }
+
+        .tbl .num {
+            text-align: right;
+        }
+
+        .link {
+            border: 0;
+            background: none;
+            padding: 0;
+            color: #1a4fa0;
+            text-decoration: underline;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .empty {
+            border: 1px solid #bbb;
+            padding: 14px;
+        }
+
+        /* My items */
+        .held-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .held {
+            border: 1px solid #bbb;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .held .meta {
+            color: #555;
+            margin-top: 3px;
+        }
+
+        .held-form {
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .held-form .fld {
+            width: 70px;
+        }
+
+        .held .err {
+            flex-basis: 100%;
+        }
+
+        .panel {
+            border: 1px solid #bbb;
+            padding: 14px;
+        }
+
+        /* Dialogs */
+        dialog {
+            border: 2px solid #444;
+            padding: 0;
+            width: min(520px, calc(100vw - 20px));
+            max-height: calc(100vh - 20px);
+            overflow: auto;
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .dlg-hd {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 10px 14px;
+            background: #eee;
+            border-bottom: 1px solid #bbb;
+        }
+
+        .dlg-bd {
+            padding: 12px 14px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .xbtn {
+            border: 1px solid #888;
+            background: #fff;
+            cursor: pointer;
+            width: 26px;
+            height: 26px;
+        }
+
+        .facts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 14px;
+            margin: 0;
+        }
+
+        .facts dt {
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .facts dd {
+            margin: 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .co-box {
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .co-row {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .co-row .fld {
+            width: 90px;
+        }
+
+        .haz-hd {
+            background: #ffe08a;
+            border-bottom: 2px solid #b07a10;
+        }
+
+        .notes {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .ack-box {
+            border: 1px solid #b07a10;
+            background: #fff6d6;
+            padding: 8px;
+        }
+
+        .done {
+            display: grid;
+            gap: 10px;
+        }
+
+        /* Login */
+        .login {
+            max-width: 380px;
+            margin: 40px auto;
+        }
+
+        .login-card {
+            border: 1px solid #999;
+            padding: 16px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .login-note {
+            border: 1px solid #b07a10;
+            background: #fff6d6;
+            padding: 6px 8px;
+        }
+
+        .demo-accts {
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+            display: grid;
+            gap: 6px;
+        }
+
+        /* Toasts */
+        #toasts {
+            position: fixed;
+            inset: auto;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            overflow: visible;
+            width: min(420px, calc(100vw - 24px));
+        }
+
+        #toasts:popover-open {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .toast {
+            background: #333;
+            color: #fff;
+            padding: 8px 12px;
+        }
+
+        .toast.err {
+            background: #a00;
+        }
+
+        @media (max-width: 520px) {
+            .facts {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+    <dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+    <dialog id="dlg2" aria-labelledby="dlg2Title"></dialog>
+    <div id="toasts" popover="manual" role="status" aria-live="polite"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            const $ = (s, r) => (r || document).querySelector(s);
+
+            // Escapes text before it goes into innerHTML, which prevents XSS
+            const esc = s => String(s == null ? '' : s).replace(
+                /[&<>"']/g,
+                c => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                } [c])
+            );
+
+            // Milliseconds
+            const HR = 36e5;
+            const DAY = 864e5;
+
+            const dlg = $('#dlg');
+            const dlg2 = $('#dlg2');
+
+            const CAT_NOTES = {
+                'Batteries': [
+                    'Charge and store the pack only in a LiPo bag, and never leave it charging unattended.',
+                    'Check the pack for swelling, punctures, or damaged leads before you use it.'
+                ],
+                'Chemicals': [
+                    'Wear safety glasses and nitrile gloves while you handle it.',
+                    'Work with ventilation and keep it away from heat, sparks, and open flames.',
+                    'Close the container fully and return it to the flammables cabinet.'
+                ]
+            };
+
+            const DEFAULT_NOTES = [
+                'Wear safety glasses and gloves while you handle it.',
+                'Follow the club lab safety policy for this item.',
+                'Return it to its storage location when you are done.'
+            ];
+
+            /* Data */
+            function seed() {
+                const now = Date.now();
+
+                const members = [{
+                        id: '300103',
+                        name: 'Jim Doe',
+                        pw: 'uas2026'
+                    },
+                    {
+                        id: '300104',
+                        name: 'Janice Doe',
+                        pw: 'uas2026'
+                    }
+                ];
+
+                // Columns: name, category, description, location, total, hazard
+                const raw = [
+                    ['LiPo Battery 4S 5000 mAh', 'Batteries',
+                        '14.8 V pack for 450 mm quadcopters.',
+                        'Battery Locker A', 12, true
+                    ],
+                    ['LiPo Battery 6S 10000 mAh', 'Batteries',
+                        '22.2 V long-endurance pack for the survey hex.',
+                        'Battery Locker A', 4, true
+                    ],
+                    ['Isopropyl Alcohol 99%, 1 L', 'Chemicals',
+                        'Cleans flux and preps surfaces before bonding.',
+                        'Flammables Cabinet', 6, true
+                    ],
+                    ['Two-Part Epoxy Kit', 'Chemicals',
+                        'Structural bonding for carbon fiber frames.',
+                        'Flammables Cabinet', 5, true
+                    ],
+                    ['Soldering Iron Station', 'Tools',
+                        'Temperature-controlled station with stand.',
+                        'Workbench 2', 4, false
+                    ],
+                    ['Digital Multimeter', 'Tools',
+                        'Continuity, voltage, and current checks.',
+                        'Workbench 2', 5, false
+                    ],
+                    ['Carbon Fiber Propeller, 10 in', 'Drone Parts',
+                        'CW/CCW pairs sold as single props.',
+                        'Parts Shelf 3', 40, false
+                    ],
+                    ['450 mm Quadcopter Frame', 'Drone Parts',
+                        'Carbon plate frame with arms and hardware.',
+                        'Parts Shelf 1', 6, false
+                    ],
+                    ['Pixhawk Flight Controller', 'Electronics',
+                        'Autopilot board with GPS and power module.',
+                        'Cabinet B', 5, false
+                    ],
+                    ['Safety Glasses', 'Safety Gear',
+                        'ANSI Z87.1 rated, one size.', 'Entry Rack', 15,
+                        false
+                    ]
+                ];
+
+                const items = raw.map((r, i) =>
+                    ({
+                        id: i + 1,
+                        name: r[0],
+                        category: r[1],
+                        description: r[2],
+                        location: r[3],
+                        total: r[4],
+                        hazard: r[5]
+                    }));
+
+                const holdings = [{
+                        memberId: '300103',
+                        itemId: 1,
+                        qty: 2,
+                        since: now - 6 * HR
+                    },
+                    {
+                        memberId: '300103',
+                        itemId: 5,
+                        qty: 1,
+                        since: now - 6 * HR
+                    },
+                    {
+                        memberId: '300104',
+                        itemId: 9,
+                        qty: 1,
+                        since: now - 1 * DAY
+                    }
+                ];
+
+                return {
+                    items,
+                    members,
+                    holdings,
+                    log: [],
+                    nextTx: 1
+                };
+            }
+
+            // S holds the inventory data, sess the signed-in member, and ui the current view state
+            const S = seed();
+            let sess = null;
+            const ui = {
+                view: 'inventory',
+                inv: {
+                    q: '',
+                    cat: ''
+                },
+                loginNote: '',
+                itemId: null,
+                hazPending: null
+            };
+
+            /* Helpers */
+            const me = () => S.members.find(m => m.id === sess.memberId);
+            const memberById = id => S.members.find(m => m.id === id);
+            const itemById = id => S.items.find(i => i.id === id);
+            const categories = () => [...new Set(S.items.map(i => i
+                .category))].sort();
+            const outQty = id => S.holdings.filter(h => h.itemId === id)
+                .reduce((a, h) => a + h.qty, 0);
+            const availOf = it => it.total - outQty(it.id);
+            const codeOf = it => 'UAS-' + String(it.id).padStart(3, '0');
+            const txid = t => 'T-' + String(t.id).padStart(4, '0');
+
+            const mname = id => memberById(id).name;
+
+            const fmt = ts => new Date(ts).toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+
+            const TABS = [{
+                    id: 'inventory',
+                    label: 'Inventory'
+                },
+                {
+                    id: 'mine',
+                    label: 'My items'
+                }
+            ];
+
+            function tx(type, o) {
+                const e = {
+                    id: S.nextTx++,
+                    ts: Date.now(),
+                    actor: sess.memberId,
+                    type,
+                    itemId: o.itemId,
+                    itemName: o.itemName,
+                    qty: o.qty,
+                    detail: o.detail || '',
+                    ack: !!o.ack
+                };
+
+                S.log.push(e);
+                return e;
+            }
+
+            function hazBadge(it) {
+                return it.hazard ?
+                    '<span class="badge b-haz">HAZARDOUS</span>' :
+                    '<span class="badge b-std">Standard</span>';
+            }
+
+            function toast(msg, kind) {
+                const tc = $('#toasts');
+                const t = document.createElement('div');
+                t.className = 'toast ' + (kind || 'info');
+                t.textContent = msg;
+                tc.appendChild(t);
+
+                if (!tc.matches(':popover-open')) {
+                    tc.showPopover();
+                }
+
+                setTimeout(() => {
+                    t.remove();
+
+                    if (!tc.children.length) {
+                        tc.hidePopover();
+                    }
+                }, 4000);
+            }
+
+            function shell(title, body, id) {
+                return '<div class="dlg-hd">' +
+                    '<h2 id="' + (id || 'dlgTitle') + '">' + title +
+                    '</h2>' +
+                    '<button class="xbtn" type="button" data-act="' + (
+                        id === 'dlg2Title' ? 'close2' : 'closedlg') +
+                    '" aria-label="Close">×</button>' +
+                    '</div>' +
+                    '<div class="dlg-bd">' + body + '</div>';
+            }
+
+            function openD(d, html) {
+                d.innerHTML = html;
+
+                if (!d.open) {
+                    d.showModal();
+                }
+            }
+
+            function closeAllDialogs() {
+                [dlg2, dlg].forEach(d => d.close());
+            }
+
+            function fieldErr(id, msg) {
+                $('#' + id).setAttribute('aria-invalid', 'true');
+                $('#e-' + id).textContent = msg;
+            }
+
+            function parseQty(str, max, what) {
+                const s = String(str).trim();
+
+                if (!/^\d+$/.test(s) || +s < 1) {
+                    return {
+                        err: 'Enter a whole number greater than zero.'
+                    };
+                }
+
+                if (+s > max) {
+                    return {
+                        err: 'Only ' + max + ' ' + what + '. Enter ' + max +
+                            ' or fewer.'
+                    };
+                }
+
+                return {
+                    n: +s
+                };
+            }
+
+            /* Login */
+            function renderLogin() {
+                $('#app').innerHTML = `
+                        <div class="wrap">
+                            <div class="login">
+                                <h1>UAS Inventory</h1>
+                                <p class="muted" style="margin-bottom:12px">UAS Club lab equipment check-out</p>
+                                <section class="login-card">
+                                    <h2>Sign in</h2>
+                                    ${ui.loginNote ? '<p class="login-note" role="alert">' + esc(ui.loginNote) + '</p>' : ''}
+                                    <form id="loginForm" novalidate class="form-grid">
+                                        <div class="fld">
+                                            <label class="lbl" for="sid">ERAU Student ID</label>
+                                            <input id="sid" type="text" inputmode="numeric" autocomplete="username">
+                                        </div>
+                                        <div class="fld">
+                                            <label class="lbl" for="pw">Password</label>
+                                            <input id="pw" type="password" autocomplete="current-password">
+                                        </div>
+                                        <p class="err" id="loginErr" role="alert"></p>
+                                        <div>
+                                            <button class="btn btn-primary" type="submit">Sign in</button>
+                                        </div>
+                                    </form>
+                                    <div class="demo-accts">
+                                        <p class="small muted">Test accounts (password <code>uas2026</code>):</p>
+                                        ${S.members.map(m => `
+                                            <div>
+                                                <button type="button" class="link" data-act="fill" data-id="${m.id}">${esc(m.name)} (${m.id})</button>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                    `;
+            }
+
+            function onLogin() {
+                const id = $('#sid').value.trim();
+                const pw = $('#pw').value;
+                const e = $('#loginErr');
+
+                if (!id || !pw) {
+                    e.textContent = !id && !pw ?
+                        'Enter your Student ID and password.' :
+                        !id ?
+                        'Enter your Student ID.' :
+                        'Enter your password.';
+                    (!id ? $('#sid') : $('#pw')).focus();
+                    return;
+                }
+
+                const m = memberById(id);
+
+                if (!m || m.pw !== pw) {
+                    e.textContent = 'Student ID or password is incorrect.';
+                    return;
+                }
+
+                sess = {
+                    memberId: m.id
+                };
+                ui.view = 'inventory';
+                ui.loginNote = '';
+                render();
+                toast('Signed in as ' + m.name + '.', 'ok');
+            }
+
+            function endSession(note) {
+                closeAllDialogs();
+                sess = null;
+                ui.loginNote = note;
+                render();
+            }
+
+            /* Shell */
+            function render() {
+                if (!sess) {
+                    renderLogin();
+                    return;
+                }
+
+                renderShell();
+            }
+
+            function refresh() {
+                render();
+            }
+
+            function renderShell() {
+                const m = me();
+
+                $('#app').innerHTML = `
+                        <div class="wrap">
+                            <header class="top">
+                                <div class="brand">UAS Inventory</div>
+                                <nav class="tabs" aria-label="Main">
+                                    ${TABS.map(t => `
+                                        <button class="tab" data-act="tab" data-v="${t.id}" ${ui.view === t.id ? 'aria-current="page"' : ''}>${t.label}</button>
+                                    `).join('')}
+                                </nav>
+                                <div class="who">
+                                    <span>${esc(m.name)} (<span class="mono">${esc(m.id)}</span>)</span>
+                                    <button class="btn btn-sm" data-act="logout">Log out</button>
+                                </div>
+                            </header>
+                            <main id="main"></main>
+                        </div>
+                    `;
+
+                $('#main').innerHTML = ui.view === 'mine' ? viewMine() :
+                    viewInventory();
+
+                if (ui.view === 'inventory') {
+                    renderList();
+                }
+            }
+
+            /* Inventory */
+            function viewInventory() {
+                const f = ui.inv;
+
+                return `
+                        <h1>Inventory</h1>
+                        <p class="stats" id="stats"></p>
+                        <form class="toolbar" role="search" data-noop="1">
+                            <div class="fld grow">
+                                <label class="lbl" for="q">Search</label>
+                                <input id="q" type="search" autocomplete="off" placeholder="Name or description" value="${esc(f.q)}">
+                            </div>
+                            <div class="fld">
+                                <label class="lbl" for="fcat">Category</label>
+                                <select id="fcat">
+                                    <option value="">All categories</option>
+                                    ${categories().map(c => `
+                                        <option value="${esc(c)}" ${f.cat === c ? 'selected' : ''}>${esc(c)}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                        </form>
+                        <div id="list"></div>
+                    `;
+            }
+
+            function filteredItems() {
+                const f = ui.inv;
+                const q = f.q.trim().toLowerCase();
+
+                return S.items.filter(it => {
+                    if (q && !(it.name + ' ' + it.description)
+                        .toLowerCase().includes(q)) {
+                        return false;
+                    }
+
+                    if (f.cat && it.category !== f.cat) {
+                        return false;
+                    }
+
+                    return true;
+                }).sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            function renderList() {
+                const units = S.items.reduce((a, i) => a + availOf(i), 0);
+                const outU = S.items.reduce((a, i) => a + outQty(i.id), 0);
+                $('#stats').textContent = S.items.length +
+                    ' item types · ' + units + ' units on the shelf · ' +
+                    outU + ' units checked out';
+
+                const list = filteredItems();
+
+                if (!list.length) {
+                    const f = ui.inv;
+
+                    $('#list').innerHTML = `
+                            <div class="empty">
+                                <h3>No items found</h3>
+                                <p class="muted">${f.q ? 'Nothing matches “' + esc(f.q) + '” with this category. ' : 'Nothing matches this category. '}Your search text and category are still set above.</p>
+                                <p style="margin-top:8px">
+                                    <button class="btn btn-sm" data-act="clearInv">Show all items</button>
+                                </p>
+                            </div>
+                        `;
+                    return;
+                }
+
+                $('#list').innerHTML = `
+                        <div class="tablewrap">
+                            <table class="tbl">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th class="num">Available</th>
+                                        <th>Hazard</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${list.map(it =>
+                                    {
+                                        const a = availOf(it);
+
+                                        return `
+                                            <tr>
+                                                <td><button class="link" data-act="open" data-id="${it.id}">${esc(it.name)}</button></td>
+                                                <td>${esc(it.category)}</td>
+                                                <td>${esc(it.location)}</td>
+                                                <td class="num">${a} / ${it.total}</td>
+                                                <td>${hazBadge(it)}</td>
+                                                <td>
+                                                    ${a > 0
+                                                        ? `<button class="btn btn-sm" data-act="open" data-id="${it.id}">Check out</button>`
+                                                        : `<button class="btn btn-sm" data-act="open" data-id="${it.id}">Details</button>`}
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+            }
+
+            /* Item dialog */
+            function dlgItem(id, st) {
+                const it = itemById(id);
+                const a = availOf(it);
+                const mine = S.holdings.find(h => h.memberId === sess
+                    .memberId && h.itemId === id);
+                const hold = S.holdings.filter(h => h.itemId === id);
+
+                const body = `
+                        <div>${hazBadge(it)}${a === 0 ? ' <span class="badge b-crit">None left</span>' : ''}</div>
+                        <p>${esc(it.description)}</p>
+                        <dl class="facts">
+                            <div><dt>Category</dt><dd>${esc(it.category)}</dd></div>
+                            <div><dt>Storage location</dt><dd>${esc(it.location)}</dd></div>
+                            <div><dt>Total quantity</dt><dd>${it.total}</dd></div>
+                            <div><dt>Available now</dt><dd>${a}</dd></div>
+                            <div style="grid-column:1/-1">
+                                <dt>Checked out by</dt>
+                                <dd>${hold.length ? hold.map(h => esc(mname(h.memberId)) + ' ×' + h.qty).join(', ') : 'Nobody'}</dd>
+                            </div>
+                        </dl>
+                        ${a > 0
+                            ? `
+                                <form class="co-box" id="coForm" novalidate>
+                                    <div class="co-row">
+                                        <div class="fld">
+                                            <label class="lbl" for="coQty">Quantity</label>
+                                            <input id="coQty" type="text" inputmode="numeric" value="${esc(st.qty != null ? st.qty : '1')}" ${st.err ? 'aria-invalid="true" aria-describedby="e-coQty"' : ''}>
+                                        </div>
+                                        <button class="btn btn-primary" type="submit">Check out</button>
+                                    </div>
+                                    <p class="err" id="e-coQty" role="alert">${esc(st.err || '')}</p>
+                                    ${it.hazard ? '<p class="small muted">This item is hazardous. You will see a safety warning before the check-out finishes.</p>' : ''}
+                                </form>
+                            `
+                            : '<p class="muted">Every unit is checked out right now, so check-out isn’t available.</p>'}
+                        ${mine
+                            ? `<p class="small">You hold ${mine.qty} of these. Return them from <button class="link" data-act="gomine">My items</button>.</p>`
+                            : ''}
+                    `;
+
+                openD(dlg, shell(
+                    `${esc(it.name)} <span class="mono small muted" style="font-weight:normal">${codeOf(it)}</span>`,
+                    body));
+
+                const q = $('#coQty');
+
+                if (st.err) {
+                    q.focus();
+                    q.select();
+                }
+            }
+
+            function onCheckout() {
+                const it = itemById(ui.itemId);
+                const raw = $('#coQty').value;
+                const r = parseQty(raw, availOf(it), 'available');
+
+                if (r.err) {
+                    dlgItem(it.id, {
+                        err: r.err,
+                        qty: raw
+                    });
+                    return;
+                }
+
+                if (it.hazard) {
+                    ui.hazPending = {
+                        itemId: it.id,
+                        qty: r.n
+                    };
+                    openHazard(it, r.n);
+                } else {
+                    finishCheckout(it.id, r.n, false);
+                }
+            }
+
+            function openHazard(it, qty) {
+                const notes = CAT_NOTES[it.category] || DEFAULT_NOTES;
+
+                openD(dlg2, `
+                        <div class="dlg-hd haz-hd">
+                            <h2 id="dlg2Title">WARNING: Hazardous item</h2>
+                        </div>
+                        <div class="dlg-bd">
+                            <p><strong>${qty} × ${esc(it.name)}</strong> is flagged hazardous. Read this before you take it.</p>
+                            <ul class="notes">
+                                ${notes.map(n => '<li>' + esc(n) + '</li>').join('')}
+                            </ul>
+                            <div class="ack-box">
+                                <label class="check">
+                                    <input type="checkbox" id="ack">
+                                    <span>I have read the safety rules above and will follow them.</span>
+                                </label>
+                            </div>
+                            <div class="actions">
+                                <button class="btn" data-act="hazcancel">Cancel</button>
+                                <button class="btn btn-warn" id="ackBtn" data-act="hazok" disabled>Acknowledge and check out</button>
+                            </div>
+                        </div>
+                    `);
+            }
+
+            function finishCheckout(itemId, qty, ack) {
+                const it = itemById(itemId);
+                let h = S.holdings.find(x => x.memberId === sess.memberId &&
+                    x.itemId === itemId);
+
+                if (h) {
+                    h.qty += qty;
+                } else {
+                    S.holdings.push({
+                        memberId: sess.memberId,
+                        itemId,
+                        qty,
+                        since: Date.now()
+                    });
+                }
+
+                const t = tx('checkout', {
+                    itemId,
+                    itemName: it.name,
+                    qty,
+                    ack,
+                    detail: ack ? 'Hazard warning acknowledged' : ''
+                });
+
+                openD(dlg, shell('Checked out', `
+                        <div class="done">
+                            <p><strong>${qty} × ${esc(it.name)}</strong> is now recorded under ${esc(me().name)}.</p>
+                            <dl class="facts">
+                                <div><dt>Transaction ID</dt><dd class="mono">${txid(t)}</dd></div>
+                                <div><dt>Time</dt><dd>${fmt(t.ts)}</dd></div>
+                                <div><dt>Left on the shelf</dt><dd>${availOf(it)} of ${it.total}</dd></div>
+                                ${it.hazard ? '<div><dt>Safety</dt><dd>Hazard warning acknowledged</dd></div>' : ''}
+                            </dl>
+                            <div class="actions">
+                                <button class="btn" data-act="gomine">View my items</button>
+                                <button class="btn btn-primary" data-act="closedlg">Done</button>
+                            </div>
+                        </div>
+                    `));
+            }
+
+            /* My items */
+            function viewMine() {
+                const mine = S.holdings.filter(h => h.memberId === sess
+                    .memberId).sort((a, b) => a.since - b.since);
+
+                return `
+                        <h1>My items</h1>
+                        <p class="lede">Items checked out under your name. You can return part of a quantity.</p>
+                        ${mine.length
+                            ? `
+                                <div class="held-list">
+                                    ${mine.map(h =>
+                                    {
+                                        const it = itemById(h.itemId);
+
+                                        return `
+                                            <form class="held" data-ret="${it.id}" novalidate>
+                                                <div>
+                                                    <h3>${esc(it.name)} ${hazBadge(it)}</h3>
+                                                    <p class="meta">You hold ${h.qty} · checked out ${fmt(h.since)} · return to ${esc(it.location)}</p>
+                                                </div>
+                                                <div class="held-form">
+                                                    <div class="fld">
+                                                        <label class="lbl" for="ret-${it.id}">Return</label>
+                                                        <input id="ret-${it.id}" type="text" inputmode="numeric" value="${h.qty}">
+                                                    </div>
+                                                    <button class="btn btn-primary" type="submit">Return</button>
+                                                </div>
+                                                <p class="err" id="e-ret-${it.id}" role="alert"></p>
+                                            </form>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `
+                            : `
+                                <div class="panel">
+                                    <h3>No items checked out</h3>
+                                    <p class="muted" style="margin-top:4px">You don’t hold anything right now.</p>
+                                    <p style="margin-top:8px">
+                                        <button class="btn btn-sm" data-act="tab" data-v="inventory">Browse inventory</button>
+                                    </p>
+                                </div>
+                            `}
+                    `;
+            }
+
+            function onReturn(itemId) {
+                const h = S.holdings.find(x => x.memberId === sess
+                    .memberId && x.itemId === itemId);
+                const it = itemById(itemId);
+                const raw = $('#ret-' + itemId).value;
+                const r = parseQty(raw, h.qty, 'held');
+
+                if (r.err) {
+                    fieldErr('ret-' + itemId, r.err);
+                    $('#ret-' + itemId).focus();
+                    return;
+                }
+
+                h.qty -= r.n;
+
+                if (h.qty === 0) {
+                    S.holdings.splice(S.holdings.indexOf(h), 1);
+                }
+
+                const t = tx('checkin', {
+                    itemId,
+                    itemName: it.name,
+                    qty: r.n,
+                    detail: h.qty > 0 ? 'Partial return, ' + h.qty +
+                        ' still held' : ''
+                });
+
+                refresh();
+                toast('Returned ' + r.n + ' × ' + it.name +
+                    '. Transaction ' + txid(t) + '.', 'ok');
+            }
+
+            /* Event handling */
+            // Buttons name their action in data-act so this one listener covers the whole page
+            document.addEventListener('click', e => {
+                const el = e.target.closest('[data-act]');
+
+                // A click on the dialog element itself is a click on its backdrop
+                if (e.target === dlg || e.target === dlg2) {
+                    e.target.close();
+                    return;
+                }
+
+                if (!el) {
+                    return;
+                }
+
+                const act = el.dataset.act;
+                const id = el.dataset.id;
+
+                switch (act) {
+                    case 'fill': {
+                        const m = memberById(id);
+                        $('#sid').value = m.id;
+                        $('#pw').value = m.pw;
+                        $('#loginErr').textContent = '';
+                        $('#loginForm button[type=submit]').focus();
+                        break;
+                    }
+                    case 'logout': {
+                        endSession('You signed out.');
+                        break;
+                    }
+                    case 'tab': {
+                        ui.view = el.dataset.v;
+                        refresh();
+                        window.scrollTo(0, 0);
+                        break;
+                    }
+                    case 'gomine': {
+                        closeAllDialogs();
+                        ui.view = 'mine';
+                        refresh();
+                        window.scrollTo(0, 0);
+                        break;
+                    }
+                    case 'open': {
+                        ui.itemId = +id;
+                        dlgItem(+id, {});
+
+                        const q = $('#coQty');
+
+                        if (q) {
+                            q.focus();
+                            q.select();
+                        }
+
+                        break;
+                    }
+                    case 'closedlg': {
+                        dlg.close();
+                        break;
+                    }
+                    case 'close2': {
+                        dlg2.close();
+                        break;
+                    }
+                    case 'clearInv': {
+                        ui.inv = {
+                            q: '',
+                            cat: ''
+                        };
+                        refresh();
+                        break;
+                    }
+                    case 'hazcancel': {
+                        dlg2.close();
+                        break;
+                    }
+                    case 'hazok': {
+                        const p = ui.hazPending;
+                        ui.hazPending = null;
+                        dlg2.close();
+                        finishCheckout(p.itemId, p.qty, true);
+                        break;
+                    }
+                }
+            });
+
+            document.addEventListener('submit', e => {
+                const f = e.target;
+                e.preventDefault();
+
+                if (f.id === 'loginForm') {
+                    onLogin();
+                } else if (f.id === 'coForm') {
+                    onCheckout();
+                } else if (f.dataset.ret) {
+                    onReturn(+f.dataset.ret);
+                }
+            });
+
+            function onFilter(e) {
+                const t = e.target;
+                const i = t.id;
+
+                if (i === 'q') {
+                    ui.inv.q = t.value;
+                    renderList();
+                } else if (i === 'fcat') {
+                    ui.inv.cat = t.value;
+                    renderList();
+                } else if (i === 'ack') {
+                    $('#ackBtn').disabled = !t.checked;
+                }
+            }
+
+            document.addEventListener('input', onFilter);
+            document.addEventListener('change', onFilter);
+
+            dlg.addEventListener('close', refresh);
+            
+            dlg2.addEventListener('close', () => {
+                if (ui.hazPending) {
+                    ui.hazPending = null;
+                    toast('Check-out cancelled. Nothing was changed.',
+                        'info');
+                }
+            });
+
+            render();
+        })();
+    </script>
+</body>
+
+</html>
