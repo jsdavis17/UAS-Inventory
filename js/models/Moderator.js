@@ -11,6 +11,7 @@ import { User } from './User.js';
 export class Moderator extends User {
     /** @returns {'Moderator'} */
     getRole() {
+        return 'Moderator';
     }
 
     /**
@@ -18,5 +19,6 @@ export class Moderator extends User {
      * @returns {boolean} true
      */
     canEditInventory() {
+        return true;
     }
 }

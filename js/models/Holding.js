@@ -17,22 +17,30 @@ export class Holding {
      * @param {number} since     timestamp (ms) of the first check-out
      */
     constructor(memberId, itemId, quantity, since) {
+        this.#memberId = memberId;
+        this.#itemId = itemId;
+        this.#quantity = quantity;
+        this.#since = since;
     }
 
     /** @returns {string} */
     getMemberId() {
+        return this.#memberId;
     }
 
     /** @returns {number} */
     getItemId() {
+        return this.#itemId;
     }
 
     /** @returns {number} */
     getQuantity() {
+        return this.#quantity;
     }
 
     /** @returns {number} */
     getSince() {
+        return this.#since;
     }
 
     /**
@@ -41,6 +49,7 @@ export class Holding {
      * @param {number} quantity
      */
     add(quantity) {
+        this.#quantity += quantity;
     }
 
     /**
@@ -49,6 +58,7 @@ export class Holding {
      * @param {number} quantity
      */
     remove(quantity) {
+        this.#quantity -= quantity;
     }
 
     /**
@@ -57,5 +67,6 @@ export class Holding {
      * @returns {boolean}
      */
     isEmpty() {
+        return this.#quantity === 0;
     }
 }

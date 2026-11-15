@@ -23,38 +23,55 @@ export class CheckOutHistory {
      *          quantity: number, detail?: string, hazardAcknowledged?: boolean}} fields
      */
     constructor(fields) {
+        this.#id = fields.id;
+        this.#timestamp = fields.timestamp;
+        this.#memberId = fields.memberId;
+        this.#action = fields.action;
+        this.#itemId = fields.itemId;
+        this.#itemName = fields.itemName;
+        this.#quantity = fields.quantity;
+        this.#detail = fields.detail || '';
+        this.#hazardAcknowledged = !!fields.hazardAcknowledged;
     }
 
     /** @returns {number} */
     getId() {
+        return this.#id;
     }
 
     /** @returns {number} */
     getTimestamp() {
+        return this.#timestamp;
     }
 
     /** @returns {string} Student ID of the member who acted */
     getMemberId() {
+        return this.#memberId;
     }
 
     /** @returns {'checkout' | 'checkin'} */
     getAction() {
+        return this.#action;
     }
 
     /** @returns {number} */
     getItemId() {
+        return this.#itemId;
     }
 
     /** @returns {string} */
     getItemName() {
+        return this.#itemName;
     }
 
     /** @returns {number} */
     getQuantity() {
+        return this.#quantity;
     }
 
     /** @returns {string} e.g. "Partial return, 1 still held" */
     getDetail() {
+        return this.#detail;
     }
 
     /**
@@ -62,6 +79,7 @@ export class CheckOutHistory {
      * @returns {boolean}
      */
     isHazardAcknowledged() {
+        return this.#hazardAcknowledged;
     }
 
     /**
@@ -70,5 +88,6 @@ export class CheckOutHistory {
      * @returns {string}
      */
     getDisplayId() {
+        return 'T-' + String(this.#id).padStart(4, '0');
     }
 }
