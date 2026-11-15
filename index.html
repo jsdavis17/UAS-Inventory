@@ -14,6 +14,10 @@
     <dialog id="dlg2" aria-labelledby="dlg2Title"></dialog>
     <div id="toasts" popover="manual" role="status" aria-live="polite"></div>
 
+    <!-- sql.js: SQLite compiled to WebAssembly. Defines the initSqlJs global that
+         js/data/Database.js uses. Keep the version in step with Database.SQL_JS_VERSION. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+
     <!-- ES modules only load over http, not file://. Run a local server, e.g. python -m http.server -->
     <script type="module" src="js/Main.js"></script>
 </body>
