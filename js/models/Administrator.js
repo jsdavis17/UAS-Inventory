@@ -9,6 +9,7 @@ import { User } from './User.js';
 export class Administrator extends User {
     /** @returns {'Administrator'} */
     getRole() {
+        return 'Administrator';
     }
 
     /**
@@ -16,6 +17,7 @@ export class Administrator extends User {
      * @returns {boolean} true
      */
     canEditInventory() {
+        return true;
     }
 
     /**
@@ -23,6 +25,7 @@ export class Administrator extends User {
      * @returns {boolean} true
      */
     canEditMembers() {
+        return true;
     }
 
     /**
@@ -30,5 +33,6 @@ export class Administrator extends User {
      * @returns {boolean} true
      */
     canEditDatabase() {
+        return true;
     }
 }

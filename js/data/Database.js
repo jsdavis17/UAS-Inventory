@@ -4,6 +4,7 @@ import { CheckOutHistory } from '../models/CheckOutHistory.js';
 import { User } from '../models/User.js';
 import { Moderator } from '../models/Moderator.js';
 import { Administrator } from '../models/Administrator.js';
+import { HR, DAY } from '../utils.js';
 
 /**
  * Database: holds every item, user, holding and history entry, and answers lookups.
@@ -27,16 +28,93 @@ export class Database {
     #nextHistoryId;
 
     constructor() {
+        this.#items = [];
+        this.#users = [];
+        this.#holdings = [];
+        this.#history = [];
+        this.#nextHistoryId = 1;
     }
 
     /* Loading and saving */
 
     /**
      * Fill the database with the seeded test data. Replaces: seed().
-     * Test setup: 10 items; 300103 holds 2 LiPo 4S and 1 Soldering Iron;
-     * 300104 holds 1 Pixhawk.
+     * Test setup: 10 items; 3 accounts, all with password uas2026:
+     * 2610000 Jim Doe (Administrator) holds 2 LiPo 4S and 1 Soldering Iron;
+     * 2610001 Janice Doe (Moderator) holds 1 Pixhawk;
+     * 2610002 John Doe (User) holds nothing.
      */
     loadData() {
+        const now = Date.now();
+
+        this.#users = [
+            new Administrator('2610000', 'Jim Doe', 'uas2026'),
+            new Moderator('2610001', 'Janice Doe', 'uas2026'),
+            new User('2610002', 'John Doe', 'uas2026')
+        ];
+
+        // Columns: name, category, description, location, total, hazard
+        const raw = [
+            ['LiPo Battery 4S 5000 mAh', 'Batteries',
+                '14.8 V pack for 450 mm quadcopters.',
+                'Battery Locker A', 12, true
+            ],
+            ['LiPo Battery 6S 10000 mAh', 'Batteries',
+                '22.2 V long-endurance pack for the survey hex.',
+                'Battery Locker A', 4, true
+            ],
+            ['Isopropyl Alcohol 99%, 1 L', 'Chemicals',
+                'Cleans flux and preps surfaces before bonding.',
+                'Flammables Cabinet', 6, true
+            ],
+            ['Two-Part Epoxy Kit', 'Chemicals',
+                'Structural bonding for carbon fiber frames.',
+                'Flammables Cabinet', 5, true
+            ],
+            ['Soldering Iron Station', 'Tools',
+                'Temperature-controlled station with stand.',
+                'Workbench 2', 4, false
+            ],
+            ['Digital Multimeter', 'Tools',
+                'Continuity, voltage, and current checks.',
+                'Workbench 2', 5, false
+            ],
+            ['Carbon Fiber Propeller, 10 in', 'Drone Parts',
+                'CW/CCW pairs sold as single props.',
+                'Parts Shelf 3', 40, false
+            ],
+            ['450 mm Quadcopter Frame', 'Drone Parts',
+                'Carbon plate frame with arms and hardware.',
+                'Parts Shelf 1', 6, false
+            ],
+            ['Pixhawk Flight Controller', 'Electronics',
+                'Autopilot board with GPS and power module.',
+                'Cabinet B', 5, false
+            ],
+            ['Safety Glasses', 'Safety Gear',
+                'ANSI Z87.1 rated, one size.', 'Entry Rack', 15,
+                false
+            ]
+        ];
+
+        this.#items = raw.map((r, i) => new InventoryItem({
+            id: i + 1,
+            name: r[0],
+            category: r[1],
+            description: r[2],
+            location: r[3],
+            totalQuantity: r[4],
+            hazardous: r[5]
+        }));
+
+        this.#holdings = [
+            new Holding('2610000', 1, 2, now - 6 * HR),
+            new Holding('2610000', 5, 1, now - 6 * HR),
+            new Holding('2610001', 9, 1, now - 1 * DAY)
+        ];
+
+        this.#history = [];
+        this.#nextHistoryId = 1;
     }
 
     /** Not in the prototype yet (PE.5, SI.1). */
@@ -47,6 +125,7 @@ export class Database {
 
     /** @returns {User[]} */
     getUsers() {
+        return [...this.#users];
     }
 
     /**
@@ -56,6 +135,7 @@ export class Database {
      * @returns {User | undefined}
      */
     getUserById(studentId) {
+        return this.#users.find(u => u.getId() === studentId);
     }
 
     /* Items */
@@ -65,6 +145,7 @@ export class Database {
      * @returns {InventoryItem[]}
      */
     getInventoryList() {
+        return [...this.#items];
     }
 
     /**
@@ -73,6 +154,7 @@ export class Database {
      * @returns {InventoryItem | undefined}
      */
     getItemById(itemId) {
+        return this.#items.find(i => i.getId() === itemId);
     }
 
     /**
@@ -81,6 +163,7 @@ export class Database {
      * @returns {string[]}
      */
     getCategories() {
+        return [...new Set(this.#items.map(i => i.getCategory()))].sort();
     }
 
     /* Quantities */
@@ -91,6 +174,9 @@ export class Database {
      * @returns {number}
      */
     getCheckedOutQuantity(itemId) {
+        return this.#holdings
+            .filter(h => h.getItemId() === itemId)
+            .reduce((sum, h) => sum + h.getQuantity(), 0);
     }
 
     /**
@@ -100,6 +186,8 @@ export class Database {
      * @returns {number}
      */
     getAvailableQuantity(itemId) {
+        return this.getItemById(itemId).getTotalQuantity() -
+            this.getCheckedOutQuantity(itemId);
     }
 
     /**
@@ -108,6 +196,19 @@ export class Database {
      * @returns {{itemTypes: number, unitsAvailable: number, unitsCheckedOut: number}}
      */
     getStats() {
+        let unitsAvailable = 0;
+        let unitsCheckedOut = 0;
+
+        for (const item of this.#items) {
+            unitsAvailable += this.getAvailableQuantity(item.getId());
+            unitsCheckedOut += this.getCheckedOutQuantity(item.getId());
+        }
+
+        return {
+            itemTypes: this.#items.length,
+            unitsAvailable,
+            unitsCheckedOut
+        };
     }
 
     /* Holdings */
@@ -118,6 +219,9 @@ export class Database {
      * @returns {Holding[]} oldest first
      */
     getHoldingsForMember(memberId) {
+        return this.#holdings
+            .filter(h => h.getMemberId() === memberId)
+            .sort((a, b) => a.getSince() - b.getSince());
     }
 
     /**
@@ -127,6 +231,7 @@ export class Database {
      * @returns {Holding[]}
      */
     getHoldingsForItem(itemId) {
+        return this.#holdings.filter(h => h.getItemId() === itemId);
     }
 
     /**
@@ -135,6 +240,8 @@ export class Database {
      * @returns {Holding | undefined}
      */
     getHolding(memberId, itemId) {
+        return this.#holdings.find(h => h.getMemberId() === memberId &&
+            h.getItemId() === itemId);
     }
 
     /**
@@ -142,6 +249,7 @@ export class Database {
      * @param {Holding} holding
      */
     addHolding(holding) {
+        this.#holdings.push(holding);
     }
 
     /**
@@ -149,6 +257,7 @@ export class Database {
      * @param {Holding} holding
      */
     removeHolding(holding) {
+        this.#holdings.splice(this.#holdings.indexOf(holding), 1);
     }
 
     /* History */
@@ -162,6 +271,14 @@ export class Database {
      * @returns {CheckOutHistory}
      */
     addHistory(fields) {
+        const entry = new CheckOutHistory({
+            ...fields,
+            id: this.#nextHistoryId++,
+            timestamp: Date.now()
+        });
+
+        this.#history.push(entry);
+        return entry;
     }
 
     /**
@@ -169,5 +286,6 @@ export class Database {
      * @returns {CheckOutHistory[]}
      */
     getHistory() {
+        return [...this.#history];
     }
 }

@@ -16,10 +16,13 @@ export class Session {
     #lastActivity;
 
     /** Not in the prototype yet (FR-LO-2): 30 minutes in ms. */
-    static TIMEOUT_MS;
+    static TIMEOUT_MS = 30 * 60 * 1000;
 
     /** @param {Database} database */
     constructor(database) {
+        this.#database = database;
+        this.#currentUser = null;
+        this.#lastActivity = 0;
     }
 
     /**
@@ -32,6 +35,19 @@ export class Session {
      *          error: "Student ID or password is incorrect."
      */
     login(studentId, password) {
+        const user = this.#database.getUserById(studentId);
+
+        if (!user || !user.checkPassword(password)) {
+            return {
+                error: 'Student ID or password is incorrect.'
+            };
+        }
+
+        this.#currentUser = user;
+        this.recordActivity();
+        return {
+            user
+        };
     }
 
     /**
@@ -39,6 +55,7 @@ export class Session {
      * Requirements: FR-LO-1. Tests: TC-LO-01.
      */
     logout() {
+        this.#currentUser = null;
     }
 
     /**
@@ -46,6 +63,7 @@ export class Session {
      * @returns {boolean}
      */
     isSignedIn() {
+        return this.#currentUser !== null;
     }
 
     /**
@@ -53,6 +71,7 @@ export class Session {
      * @returns {User | null}
      */
     getCurrentUser() {
+        return this.#currentUser;
     }
 
     /**
@@ -60,6 +79,7 @@ export class Session {
      * Not in the prototype yet (FR-LO-2).
      */
     recordActivity() {
+        this.#lastActivity = Date.now();
     }
 
     /**
@@ -68,5 +88,6 @@ export class Session {
      * @returns {boolean}
      */
     hasTimedOut() {
+        return Date.now() - this.#lastActivity > Session.TIMEOUT_MS;
     }
 }

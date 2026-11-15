@@ -16,6 +16,7 @@ export const DAY = 864e5;
  * @returns {Element | null}
  */
 export function $(selector, root) {
+    return (root || document).querySelector(selector);
 }
 
 /**
@@ -24,6 +25,13 @@ export function $(selector, root) {
  * @returns {string}
  */
 export function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    } [c]));
 }
 
 /**
@@ -32,6 +40,12 @@ export function esc(value) {
  * @returns {string}
  */
 export function formatTime(timestamp) {
+    return new Date(timestamp).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+    });
 }
 
 /**
@@ -41,6 +55,8 @@ export function formatTime(timestamp) {
  * @param {string} message
  */
 export function showFieldError(inputId, message) {
+    $('#' + inputId).setAttribute('aria-invalid', 'true');
+    $('#e-' + inputId).textContent = message;
 }
 
 /**
@@ -50,4 +66,7 @@ export function showFieldError(inputId, message) {
  * @returns {string}
  */
 export function hazardBadge(item) {
+    return item.isHazardous() ?
+        '<span class="badge b-haz">HAZARDOUS</span>' :
+        '<span class="badge b-std">Standard</span>';
 }

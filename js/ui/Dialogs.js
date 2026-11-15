@@ -16,14 +16,18 @@ export class Dialogs {
      * @param {HTMLDialogElement} secondary
      */
     constructor(primary, secondary) {
+        this.#primary = primary;
+        this.#secondary = secondary;
     }
 
     /** @returns {HTMLDialogElement} */
     getPrimary() {
+        return this.#primary;
     }
 
     /** @returns {HTMLDialogElement} */
     getSecondary() {
+        return this.#secondary;
     }
 
     /**
@@ -33,6 +37,13 @@ export class Dialogs {
      * @returns {string}
      */
     frame(titleHtml, bodyHtml) {
+        return `
+            <div class="dlg-hd">
+                <h2 id="dlgTitle">${titleHtml}</h2>
+                <button class="xbtn" type="button" data-act="closedlg" aria-label="Close">×</button>
+            </div>
+            <div class="dlg-bd">${bodyHtml}</div>
+        `;
     }
 
     /**
@@ -41,14 +52,22 @@ export class Dialogs {
      * @param {string} html
      */
     open(dialog, html) {
+        dialog.innerHTML = html;
+
+        if (!dialog.open) {
+            dialog.showModal();
+        }
     }
 
     /** @param {HTMLDialogElement} dialog */
     close(dialog) {
+        dialog.close();
     }
 
     /** Replaces: closeAllDialogs(). Tests: TC-LO-01. */
     closeAll() {
+        this.#secondary.close();
+        this.#primary.close();
     }
 
     /**
@@ -57,6 +76,12 @@ export class Dialogs {
      * @returns {boolean} true if the click was on a backdrop
      */
     handleBackdropClick(event) {
+        if (event.target === this.#primary || event.target === this.#secondary) {
+            event.target.close();
+            return true;
+        }
+
+        return false;
     }
 }
 
@@ -70,10 +95,11 @@ export class Toaster {
     #container;
 
     /** Milliseconds a toast stays up (prototype: 4000). */
-    static DURATION_MS;
+    static DURATION_MS = 4000;
 
     /** @param {HTMLElement} container */
     constructor(container) {
+        this.#container = container;
     }
 
     /**
@@ -81,5 +107,21 @@ export class Toaster {
      * @param {'info' | 'ok' | 'err'} [kind]
      */
     show(message, kind) {
+        const toast = document.createElement('div');
+        toast.className = 'toast ' + (kind || 'info');
+        toast.textContent = message;
+        this.#container.appendChild(toast);
+
+        if (!this.#container.matches(':popover-open')) {
+            this.#container.showPopover();
+        }
+
+        setTimeout(() => {
+            toast.remove();
+
+            if (!this.#container.children.length) {
+                this.#container.hidePopover();
+            }
+        }, Toaster.DURATION_MS);
     }
 }

@@ -21,30 +21,43 @@ export class InventoryItem {
      *          location: string, totalQuantity: number, hazardous: boolean}} details
      */
     constructor(details) {
+        this.#id = details.id;
+        this.#name = details.name;
+        this.#category = details.category;
+        this.#description = details.description;
+        this.#location = details.location;
+        this.#totalQuantity = details.totalQuantity;
+        this.#hazardous = details.hazardous;
     }
 
     /** @returns {number} */
     getId() {
+        return this.#id;
     }
 
     /** @returns {string} */
     getName() {
+        return this.#name;
     }
 
     /** @returns {string} */
     getCategory() {
+        return this.#category;
     }
 
     /** @returns {string} */
     getDescription() {
+        return this.#description;
     }
 
     /** @returns {string} */
     getLocation() {
+        return this.#location;
     }
 
     /** @returns {number} */
     getTotalQuantity() {
+        return this.#totalQuantity;
     }
 
     /**
@@ -52,6 +65,7 @@ export class InventoryItem {
      * @returns {boolean}
      */
     isHazardous() {
+        return this.#hazardous;
     }
 
     /**
@@ -59,6 +73,7 @@ export class InventoryItem {
      * @returns {string}
      */
     getCode() {
+        return 'UAS-' + String(this.#id).padStart(3, '0');
     }
 
     /**

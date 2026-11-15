@@ -19,20 +19,26 @@ export class User {
      * @param {string} password
      */
     constructor(id, name, password) {
+        this.#id = id;
+        this.#name = name;
+        this.#password = password;
     }
 
     /** @returns {string} */
     getId() {
+        return this.#id;
     }
 
     /** @returns {string} */
     getName() {
+        return this.#name;
     }
 
     /**
      * @returns {'User' | 'Moderator' | 'Administrator'}
      */
     getRole() {
+        return 'User';
     }
 
     /**
@@ -42,6 +48,7 @@ export class User {
      * @returns {boolean}
      */
     checkPassword(password) {
+        return this.#password === password;
     }
 
     /**
@@ -49,17 +56,21 @@ export class User {
      * @returns {boolean}
      */
     isActive() {
+        return true;
     }
 
     /** @returns {boolean} false for regular members (FR-EI-1) */
     canEditInventory() {
+        return false;
     }
 
     /** @returns {boolean} false for regular members (FR-EM-1) */
     canEditMembers() {
+        return false;
     }
 
     /** @returns {boolean} false for regular members (FR-ED-1) */
     canEditDatabase() {
+        return false;
     }
 }
