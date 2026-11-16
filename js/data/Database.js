@@ -5,7 +5,6 @@ import { User } from '../models/User.js';
 import { Moderator } from '../models/Moderator.js';
 import { Administrator } from '../models/Administrator.js';
 import { HR, DAY } from '../utils.js';
-import { HR, DAY } from '../utils.js';
 
 /**
  * Database: holds every item, user, holding and history entry, and answers lookups.
@@ -438,6 +437,10 @@ export class Database {
             totalQuantity: details.totalQuantity ?? current.total_quantity,
             hazardous: details.hazardous ?? current.hazardous === 1
         };
+        const checkedOut = this.getCheckedOutQuantity(itemId);
+        if (merged.totalQuantity < checkedOut) {
+            return { error: `Total quantity cannot be below the ${checkedOut} units checked out.` };
+        }
         this.#run(`UPDATE items SET name = ?, category = ?, description = ?, location = ?,
                                     total_quantity = ?, hazardous = ?
                    WHERE id = ?`,
