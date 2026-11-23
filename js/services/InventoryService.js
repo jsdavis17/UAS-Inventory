@@ -157,6 +157,7 @@ export class InventoryService {
 
         if (holding) {
             holding.add(check.quantity);
+            this.#database.updateHolding(holding);
         } else {
             this.#database.addHolding(new Holding(member.getId(), itemId,
                 check.quantity, Date.now()));
@@ -200,10 +201,7 @@ export class InventoryService {
         }
 
         holding.remove(check.quantity);
-
-        if (holding.isEmpty()) {
-            this.#database.removeHolding(holding);
-        }
+        this.#database.updateHolding(holding);
 
         const stillHeld = holding.getQuantity();
         const entry = this.#database.addHistory({
