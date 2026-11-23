@@ -75,9 +75,10 @@ export class Main {
     /**
      * Load data, create the services and views, attach listeners, show the login page.
      */
-    start() {
+    async start() {
         this.#database = new Database();
-        this.#database.loadData();
+        // Must finish before any view reads the database
+        await this.#database.loadData();
         this.#session = new Session(this.#database);
         this.#inventoryService = new InventoryService(this.#database);
         this.#dialogs = new Dialogs($('#dlg'), $('#dlg2'));
@@ -273,4 +274,4 @@ export class Main {
 }
 
 // Entry point
-new Main().start();
+new Main().start().catch(error => console.error('UAS Inventory failed to start', error));

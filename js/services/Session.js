@@ -1,5 +1,6 @@
 import { Database } from '../data/Database.js';
 import { User } from '../models/User.js';
+import { burnPasswordCheck, prepareDummyHash } from './Credentials.js';
 
 /**
  * Session: who is signed in, and logging in and out.
@@ -23,6 +24,7 @@ export class Session {
         this.#database = database;
         this.#currentUser = null;
         this.#lastActivity = 0;
+        prepareDummyHash();
     }
 
     /**
@@ -36,6 +38,11 @@ export class Session {
      */
     login(studentId, password) {
         const user = this.#database.getUserById(studentId);
+
+        if (!user) {
+            // Same bcrypt cost as a real check, so response time doesn't reveal valid IDs
+            burnPasswordCheck(password);
+        }
 
         if (!user || !user.checkPassword(password)) {
             return {

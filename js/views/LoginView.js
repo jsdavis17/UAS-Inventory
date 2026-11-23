@@ -1,5 +1,6 @@
 import { Session } from '../services/Session.js';
 import { Database } from '../data/Database.js';
+import { validateStudentId } from '../services/Credentials.js';
 import { $, esc } from '../utils.js';
 
 /**
@@ -49,7 +50,8 @@ export class LoginView {
                         <form id="loginForm" novalidate class="form-grid">
                             <div class="fld">
                                 <label class="lbl" for="sid">ERAU Student ID</label>
-                                <input id="sid" type="text" inputmode="numeric" autocomplete="username">
+                                <input id="sid" type="text" inputmode="numeric" autocomplete="username"
+                                       maxlength="7" pattern="\\d{7}" placeholder="7 digits">
                             </div>
                             <div class="fld">
                                 <label class="lbl" for="pw">Password</label>
@@ -61,7 +63,7 @@ export class LoginView {
                             </div>
                         </form>
                         <div class="demo-accts">
-                            <p class="small muted">Test accounts (password <code>uas2026</code>):</p>
+                            <p class="small muted">Test accounts (password <code>${esc(Database.TEST_PASSWORD)}</code>):</p>
                             ${this.#database.getUsers().map(user => `
                                 <div>
                                     <button type="button" class="link" data-act="fill" data-id="${user.getId()}">${esc(user.getName())} (${user.getId()}) - ${user.getRole()}</button>
@@ -102,6 +104,15 @@ export class LoginView {
             return;
         }
 
+        // Format check only. Password strength rules apply when a password is set,
+        // not at sign-in, so a wrong password still gets the generic message below.
+        const idError = validateStudentId(id);
+        if (idError) {
+            this.showError(idError);
+            $('#sid').focus();
+            return;
+        }
+
         const result = this.#session.login(id, pw);
 
         if (result.error) {
@@ -119,7 +130,7 @@ export class LoginView {
      */
     fillTestAccount(studentId) {
         $('#sid').value = studentId;
-        $('#pw').value = 'uas2026';
+        $('#pw').value = Database.TEST_PASSWORD;
         $('#loginErr').textContent = '';
         $('#loginForm button[type=submit]').focus();
     }

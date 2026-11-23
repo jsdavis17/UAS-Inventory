@@ -1,3 +1,5 @@
+import { verifyPassword } from '../services/Credentials.js';
+
 /**
  * User: a regular club member account.
  * Layer: Data. UML: User (made concrete, since regular members are Users).
@@ -11,17 +13,17 @@
 export class User {
     #id;
     #name;
-    #password;
+    #passwordHash;
 
     /**
-     * @param {string} id        ERAU Student ID
+     * @param {string} id            ERAU Student ID
      * @param {string} name
-     * @param {string} password
+     * @param {string} passwordHash  bcrypt hash; the plain password is never stored
      */
-    constructor(id, name, password) {
+    constructor(id, name, passwordHash) {
         this.#id = id;
         this.#name = name;
-        this.#password = password;
+        this.#passwordHash = passwordHash;
     }
 
     /** @returns {string} */
@@ -42,13 +44,14 @@ export class User {
     }
 
     /**
+     * Compare a typed password with the stored bcrypt hash.
      * Replaces: the m.pw !== pw check in onLogin().
      * Requirements: FR-LI-2. Tests: TC-LI-01, TC-LI-02.
      * @param {string} password
      * @returns {boolean}
      */
     checkPassword(password) {
-        return this.#password === password;
+        return verifyPassword(password, this.#passwordHash);
     }
 
     /**

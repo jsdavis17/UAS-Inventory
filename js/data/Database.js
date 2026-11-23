@@ -4,6 +4,12 @@ import { CheckOutHistory } from '../models/CheckOutHistory.js';
 import { User } from '../models/User.js';
 import { Moderator } from '../models/Moderator.js';
 import { Administrator } from '../models/Administrator.js';
+import {
+    validateStudentId,
+    validatePassword,
+    hashPassword,
+    isPasswordHash
+} from '../services/Credentials.js';
 import { HR, DAY } from '../utils.js';
 
 /**
@@ -25,8 +31,14 @@ import { HR, DAY } from '../utils.js';
 export class Database {
     /** sql.js version on cdnjs. index.html must load the same version. */
     static SQL_JS_VERSION = '1.10.3';
-    /** localStorage key that holds the exported database file. */
-    static STORAGE_KEY = 'uas-inventory.sqlite';
+    /**
+     * localStorage key that holds the exported database file.
+     * v2: 7-digit Student IDs and passwords that meet the password rules. The new
+     * key means a copy saved before that change is ignored and the seeds run again.
+     */
+    static STORAGE_KEY = 'uas-inventory.v2.sqlite';
+    /** Password of every seeded test account. Meets the rules in Credentials.js. */
+    static TEST_PASSWORD = 'Uas2026!';
 
     /** @type {import('sql.js').Database | null} */
     #db;
@@ -41,8 +53,8 @@ export class Database {
      * Open the database. Uses the copy saved in localStorage when there is one,
      * otherwise creates the tables and fills them with the seeded test data.
      * Replaces: seed(). Main.start() must await this before using the database.
-     * Test setup: 10 items; 300103 holds 2 LiPo 4S and 1 Soldering Iron;
-     * 300104 holds 1 Pixhawk.
+     * Test setup: 10 items; 3001031 holds 2 LiPo 4S and 1 Soldering Iron;
+     * 3001042 holds 1 Pixhawk.
      */
     async loadData() {
         const SQL = await Database.#loadSqlJs();
@@ -51,6 +63,7 @@ export class Database {
         if (saved) {
             this.#db = new SQL.Database(saved);
             this.#createTables();
+            this.#hashPlainTextPasswords();
             return;
         }
 
@@ -136,14 +149,36 @@ export class Database {
         return bytes;
     }
 
+    /**
+     * One-time upgrade for a file saved before hashing: rename the old password
+     * column and replace each plain-text password with its bcrypt hash, so existing
+     * accounts keep the same password. Does nothing on an up-to-date file.
+     */
+    #hashPlainTextPasswords() {
+        const columns = this.#query('PRAGMA table_info(users)').map(column => column.name);
+        if (columns.includes('password') && !columns.includes('password_hash')) {
+            this.#db.exec('ALTER TABLE users RENAME COLUMN password TO password_hash');
+        }
+
+        const plain = this.#query('SELECT id, password_hash FROM users')
+            .filter(row => !isPasswordHash(row.password_hash));
+        for (const row of plain) {
+            this.#run('UPDATE users SET password_hash = ? WHERE id = ?',
+                [hashPassword(row.password_hash), row.id]);
+        }
+        if (plain.length > 0) {
+            this.saveData();
+        }
+    }
+
     /** Create the four tables if they are missing. Safe to run on an existing file. */
     #createTables() {
         this.#db.exec(`
             CREATE TABLE IF NOT EXISTS users (
-                id        TEXT PRIMARY KEY,
-                name      TEXT NOT NULL,
-                password  TEXT NOT NULL,
-                role      TEXT NOT NULL DEFAULT 'User'
+                id            TEXT PRIMARY KEY,
+                name          TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                role          TEXT NOT NULL DEFAULT 'User'
             );
             CREATE TABLE IF NOT EXISTS items (
                 id             INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -179,10 +214,16 @@ export class Database {
     #seed() {
         const now = Date.now();
 
-        this.#run(`INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, 'User')`,
-            ['300103', 'Jim Doe', 'uas2026']);
-        this.#run(`INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, 'User')`,
-            ['300104', 'Janice Doe', 'uas2026']);
+        const users = [
+            ['3001031', 'Jim Doe', 'User'],
+            ['3001042', 'Janice Doe', 'User'],
+            ['3001053', 'Morgan Lee', 'Moderator'],
+            ['3001064', 'Alex Admin', 'Administrator']
+        ];
+        for (const [id, name, role] of users) {
+            this.#run('INSERT INTO users (id, name, password_hash, role) VALUES (?, ?, ?, ?)',
+                [id, name, hashPassword(Database.TEST_PASSWORD), role]);
+        }
 
         // Columns: name, category, description, location, total, hazard
         const raw = [
@@ -225,9 +266,9 @@ export class Database {
         }
 
         const holdings = [
-            ['300103', 1, 2, now - 6 * HR],
-            ['300103', 5, 1, now - 6 * HR],
-            ['300104', 9, 1, now - 1 * DAY]
+            ['3001031', 1, 2, now - 6 * HR],
+            ['3001031', 5, 1, now - 6 * HR],
+            ['3001042', 9, 1, now - 1 * DAY]
         ];
         for (const row of holdings) {
             this.#run(`INSERT INTO holdings (member_id, item_id, quantity, since)
@@ -277,11 +318,11 @@ export class Database {
     static #toUser(row) {
         switch (row.role) {
             case 'Administrator':
-                return new Administrator(row.id, row.name, row.password);
+                return new Administrator(row.id, row.name, row.password_hash);
             case 'Moderator':
-                return new Moderator(row.id, row.name, row.password);
+                return new Moderator(row.id, row.name, row.password_hash);
             default:
-                return new User(row.id, row.name, row.password);
+                return new User(row.id, row.name, row.password_hash);
         }
     }
 
@@ -338,16 +379,26 @@ export class Database {
 
     /**
      * Add a member account. Requirements: FR-EM-1, FR-EM-2.
+     * The password is passed in plain text and only its bcrypt hash is stored.
      * @param {{id: string, name: string, password: string,
      *          role?: 'User' | 'Moderator' | 'Administrator'}} fields
-     * @returns {User | {error: string}} error when the Student ID is already taken
+     * @returns {User | {error: string}} error when the Student ID is not 7 digits or
+     *          already taken, or the password fails a rule in Credentials.js
      */
     addUser(fields) {
+        const idError = validateStudentId(fields.id);
+        if (idError) {
+            return { error: idError };
+        }
+        const passwordErrors = validatePassword(fields.password, fields.id);
+        if (passwordErrors.length > 0) {
+            return { error: 'Password must have: ' + passwordErrors.join(' ') };
+        }
         if (this.getUserById(fields.id)) {
             return { error: `Student ID ${fields.id} already exists.` };
         }
-        this.#run('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)',
-            [fields.id, fields.name, fields.password, fields.role || 'User']);
+        this.#run('INSERT INTO users (id, name, password_hash, role) VALUES (?, ?, ?, ?)',
+            [fields.id, fields.name, hashPassword(fields.password), fields.role || 'User']);
         this.saveData();
         return this.getUserById(fields.id);
     }

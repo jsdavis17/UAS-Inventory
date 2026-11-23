@@ -18,6 +18,10 @@
          js/data/Database.js uses. Keep the version in step with Database.SQL_JS_VERSION. -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
 
+    <!-- bcrypt.js: bcrypt password hashing in plain JavaScript. Defines the
+         dcodeIO.bcrypt global that js/services/Credentials.js uses. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+
     <!-- ES modules only load over http, not file://. Run a local server, e.g. python -m http.server -->
     <script type="module" src="js/Main.js"></script>
 </body>
